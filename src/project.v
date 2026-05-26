@@ -1,47 +1,44 @@
-name: gds
+/*
+ * Copyright (c) 2026 Satya Roop Bankuru
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-on:
-  push:
-  workflow_dispatch:
+`default_nettype none
 
-jobs:
-  gds:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: checkout repo
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
+module tt_um_example (
+    input  wire [7:0] ui_in,    // Dedicated inputs
+    output wire [7:0] uo_out,   // Dedicated outputs
+    input  wire [7:0] uio_in,   // IOs: Input path
+    output wire [7:0] uio_out,  // IOs: Output path
+    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
+    input  wire       ena,      // always 1 when the design is powered
+    input  wire       clk,      // clock
+    input  wire       rst_n     // reset_n - low to reset
+);
 
-      - name: Build GDS
-        uses: TinyTapeout/tt-gds-action@main
-        with:
-          pdk: gf180mcuD
+    // 8-bit internal shift register
+    reg [7:0] shift_reg;
+    wire feedback = shift_reg[7] ^ shift_reg[5] ^ shift_reg[4] ^ shift_reg[3];
 
-  precheck:
-    needs: gds
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Run Tiny Tapeout Precheck
-        uses: TinyTapeout/tt-gds-action/precheck@main
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            shift_reg <= 8'h01; // Seed value
+        end else begin
+            shift_reg <= {shift_reg[6:0], feedback};
+        end
+    end
 
-  gl_test:
-    needs: gds
-    runs-on: ubuntu-24.04
-    steps:
-      - name: checkout repo
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
+    // CRITICAL CONGESTION FIX: Drive only 1 external output pin (uo_out[0]).
+    // Hardwire the other 7 outputs to 0 so OpenLane completely removes their physical routing lines.
+    assign uo_out[0]   = shift_reg[0];
+    assign uo_out[7:1] = 7'b0000000;
 
-      - name: GL test
-        uses: TinyTapeout/tt-gds-action/gl_test@main
+    // Turn off bidirectional pins entirely
+    assign uio_out = 8'b00000000;
+    assign uio_oe  = 8'b00000000;
 
-  viewer:
-    needs: gds
-    runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - uses: TinyTapeout/tt-gds-action/viewer@main
+    // Quiet the linting tools safely
+    wire [7:0] unused_inputs = ui_in ^ uio_in;
+    wire _unused = &{ena, unused_inputs, 1'b0};
+
+endmodule
