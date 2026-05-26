@@ -16,13 +16,9 @@ module tt_um_example (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-    // Internal state register for the 8-bit LFSR
     reg [7:0] shift_reg;
-
-    // Taps at bit positions 7, 5, 4, and 3 create a maximal length sequence
     wire feedback = shift_reg[7] ^ shift_reg[5] ^ shift_reg[4] ^ shift_reg[3];
 
-    // Sequential state processing
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             shift_reg <= 8'h01; // Seed value
@@ -31,15 +27,15 @@ module tt_um_example (
         end
     end
 
-    // Drive all 8 output lines directly with the register contents
+    // Direct assignment to the output bus
     assign uo_out = shift_reg;
 
-    // Completely deactivate the bi-directional I/O infrastructure routing
+    // Static tie-offs for bi-directional structures
     assign uio_out = 8'b00000000;
     assign uio_oe  = 8'b00000000;
 
-    // Safely sink remaining input ports to avoid compilation warnings
-    wire [7:0] combined_inputs = ui_in ^ uio_in;
-    wire _unused = &{ena, combined_inputs, 1'b0};
+    // Unused input sinks to satisfy linters smoothly
+    wire [7:0] dummy_wires = ui_in ^ uio_in;
+    wire _unused = &{ena, dummy_wires, 1'b0};
 
 endmodule
