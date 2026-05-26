@@ -1,14 +1,24 @@
+# Tiny Tapeout project information
 project:
-  title: "8-bit Pseudo-Random LFSR Generator"
-  description: "A digital sequential circuit that implements a maximal-period 8-bit LFSR PRNG."
-  author: "Satya Roop Bankuru & Team"
-  language: "Verilog"
+  title:        "8-bit Pseudo-Random LFSR Generator"
+  description:  "A digital sequential circuit implementing an 8-bit maximal-period LFSR PRNG."
+  author:       "Satya Roop Bankuru & Team"
+  language:     "Verilog"
+  clock_hz:     50000000       # 50 MHz default clock frequency
 
-# Configuration linking to the source folder parameters
-gds_filename: "gds/tt_um_example.gds"
-top_module: "tt_um_example"
+# How many silicon blocks (tiles) your design takes up. A simple 8-bit LFSR fits perfectly in 1 tile.
+  tiles:        "1x1"          
 
-documentation:
+# Your top module name and the list of source files mapped relative to the root or folder dir
+  top_module:   "tt_um_example"
+  source_files:
+    - "src/project.v"
+
+# Tiny Tapeout specification standard configuration version
+yaml_version: "4"
+
+# Documenting the explicit pinout configurations exactly as demanded by the toolchain validator
+pinout:
   inputs:
     - "none"
     - "none"
@@ -19,14 +29,14 @@ documentation:
     - "none"
     - "none"
   outputs:
-    - "random out [0]"
-    - "random out [1]"
-    - "random out [2]"
-    - "random out [3]"
-    - "random out [4]"
-    - "random out [5]"
-    - "random out [6]"
-    - "random out [7]"
+    - "random out 0"
+    - "random out 1"
+    - "random out 2"
+    - "random out 3"
+    - "random out 4"
+    - "random out 5"
+    - "random out 6"
+    - "random out 7"
   bidirectional:
     - "unused"
     - "unused"
