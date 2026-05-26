@@ -1,44 +1,47 @@
-/*
- * Copyright (c) 2026 Satya Roop Bankuru
- * SPDX-License-Identifier: Apache-2.0
- */
+name: gds
 
-`default_nettype none
+on:
+  push:
+  workflow_dispatch:
 
-module tt_um_example (
-    input  wire [7:0] ui_in,    // Dedicated inputs
-    output wire [7:0] uo_out,   // Dedicated outputs
-    input  wire [7:0] uio_in,   // IOs: Input path
-    output wire [7:0] uio_out,  // IOs: Output path
-    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
-    input  wire       ena,      // always 1 when the design is powered
-    input  wire       clk,      // clock
-    input  wire       rst_n     // reset_n - low to reset
-);
+jobs:
+  gds:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
-    // 8-bit Internal shift register
-    reg [7:0] shift_reg;
-    wire feedback = shift_reg[7] ^ shift_reg[5] ^ shift_reg[4] ^ shift_reg[3];
+      - name: Build GDS
+        uses: TinyTapeout/tt-gds-action@main
+        with:
+          pdk: gf180mcuD
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            shift_reg <= 8'h01;
-        end else begin
-            shift_reg <= {shift_reg[6:0], feedback};
-        end
-    end
+  precheck:
+    needs: gds
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Run Tiny Tapeout Precheck
+        uses: TinyTapeout/tt-gds-action/precheck@main
 
-    // CRITICAL ROUTING REDUCTION: Only connect a single physical output pin.
-    // Hard-wire pins 1 through 7 to zero so OpenLane eliminates their routing paths entirely.
-    assign uo_out[0]   = shift_reg[0];
-    assign uo_out[7:1] = 7'b0000000;
+  gl_test:
+    needs: gds
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
-    // Disconnect the bidirectional interface completely
-    assign uio_out = 8'b00000000;
-    assign uio_oe  = 8'b00000000;
+      - name: GL test
+        uses: TinyTapeout/tt-gds-action/gl_test@main
 
-    // Tie off remaining input paths cleanly to ground
-    wire [7:0] dummy_mix = ui_in ^ uio_in;
-    wire _unused = &{ena, dummy_mix, 1'b0};
-
-endmodule
+  viewer:
+    needs: gds
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: TinyTapeout/tt-gds-action/viewer@main
