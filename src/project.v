@@ -24,7 +24,7 @@ module tt_um_example (
     wire feedback = shift_reg[7] ^ shift_reg[5] ^ shift_reg[4] ^ shift_reg[3];
 
     // Sequential state processing
-    always @(posedge clk or megedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             // LFSR must never be reset to 0x00, otherwise it gets locked up forever.
             // We initialize it to a seed value of 0x01.
