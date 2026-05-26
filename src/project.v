@@ -19,30 +19,29 @@ module tt_um_example (
     // Internal state register for the 8-bit LFSR
     reg [7:0] shift_reg;
 
-    // Taps at bit positions 7, 5, 4, and 3 create a maximal length sequence (255 cycles before repeating)
-    // Polynomial: x^8 + x^6 + x^5 + x^4 + 1
+    // Taps at bit positions 7, 5, 4, and 3 create a maximal length sequence
     wire feedback = shift_reg[7] ^ shift_reg[5] ^ shift_reg[4] ^ shift_reg[3];
 
     // Sequential state processing
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            // LFSR must never be reset to 0x00, otherwise it gets locked up forever.
-            // We initialize it to a seed value of 0x01.
-            shift_reg <= 8'h01; 
+            shift_reg <= 8'h01; // Seed value
         end else begin
-            // Shift left by 1 position and inject the feedback calculation into bit 0
             shift_reg <= {shift_reg[6:0], feedback};
         end
     end
 
-    // Direct assignment to top-level dedicated outputs
+    // Assign output directly
     assign uo_out = shift_reg;
 
-    // Cleanly close out the unused bi-directional pins
+    // Disconnect bi-directional pins entirely from internal logic routing
     assign uio_out = 8'b00000000;
     assign uio_oe  = 8'b00000000;
 
-    // Bundle unused input signals to cleanly eliminate compiler/linter warnings
-    wire _unused = &{ena, ui_in, uio_in, 1'b0};
+    // Forcible Tie-offs: Tieing external input ports directly to an internal sink
+    // This tells the router that these pins don't connect to any internal gates, 
+    // letting OpenLane ignore routing them entirely!
+    wire [7:0] dummy_inputs = ui_in ^ uio_in;
+    wire _unused = &{ena, dummy_inputs, 1'b0};
 
 endmodule
