@@ -2,7 +2,7 @@ import cocotb
 from cocotb.triggers import ClockCycles
 
 @cocotb.test()
-async def test_lfsr_baseline(dut):
+async def test_project(dut):
     dut._log.info("Starting baseline verification loop...")
     
     # Initialize all interface control signals safely
@@ -25,4 +25,4 @@ async def test_lfsr_baseline(dut):
         current_bus_value = int(dut.uo_out.value)
         dut._log.info(f"Cycle {cycle}: Read Full 8-bit Output Bus = {current_bus_value}")
         
-    dut._log.info("Baseline simulation completed with zero verification errors!")
+    dut._log.info("Baseline simulation completed successfully!")
